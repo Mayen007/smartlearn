@@ -1,0 +1,52 @@
+/* AI Status Indicator Styles */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.ai-status-indicator {
+  margin-left: auto;
+  margin-right: 0;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  background: transparent;
+}
+
+.ai-status-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.ai-status-dot {
+  width: 8px;
+  height: 8px;
+  background: #4caf50;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+.ai-status-label {
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .ai-status-indicator {
+    display: none !important;
+  }
+}

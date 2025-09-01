@@ -7,6 +7,18 @@ from quiz_generator import get_quiz_generator
 import uuid
 from datetime import datetime
 
+# Firebase imports with error handling
+try:
+    from firebase_config import (
+        initialize_firebase, require_auth, optional_auth,
+        get_user_data, create_user_profile, save_quiz_result,
+        save_learning_session, is_firebase_available
+    )
+    FIREBASE_ENABLED = True
+except ImportError:
+    FIREBASE_ENABLED = False
+    print("⚠️ Firebase not available - running without authentication")
+
 # Load environment variables
 load_dotenv()
 
@@ -16,6 +28,17 @@ app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-123')
 # Configure Flask-Session
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
+# Initialize Firebase if available
+if FIREBASE_ENABLED:
+    firebase_initialized = initialize_firebase()
+    if firebase_initialized:
+        print("✅ Firebase initialized successfully")
+    else:
+        print("⚠️ Firebase initialization failed - running in local mode")
+        FIREBASE_ENABLED = False
+else:
+    print("ℹ️ Running without Firebase authentication")
 
 # In-memory storage for student sessions (in production, use Redis or database)
 student_sessions = {}
@@ -378,6 +401,159 @@ def get_learning_tip(student_session, subject):
                 return f"Keep practicing {subject}! Review the basics and ask for clarification on difficult concepts."
 
     return f"Keep exploring {subject}! Every question helps us understand your learning needs better."
+
+
+# ====================================================================
+# FIREBASE AUTHENTICATION ROUTES (Only available if Firebase is enabled)
+# ====================================================================
+
+if FIREBASE_ENABLED:
+
+    @app.route('/api/create-user', methods=['POST'])
+    @require_auth
+    def create_user_api():
+        """Create user profile in Firestore"""
+        try:
+            data = request.get_json()
+            uid = data.get('uid') or request.user['uid']
+            email = data.get('email') or request.user['email']
+            name = data.get('name') or request.user.get(
+                'name', email.split('@')[0])
+
+            # Create user profile
+            user_profile = create_user_profile(uid, email, name)
+
+            if user_profile:
+                return jsonify({
+                    'success': True,
+                    'message': 'User profile created successfully',
+                    'user': user_profile
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to create user profile'
+                }), 500
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error creating user profile: {str(e)}'
+            }), 500
+
+    @app.route('/api/user-profile', methods=['GET'])
+    @require_auth
+    def get_user_profile_api():
+        """Get user profile data"""
+        try:
+            uid = request.user['uid']
+            user_data = get_user_data(uid)
+
+            if user_data:
+                return jsonify({
+                    'success': True,
+                    'user': user_data
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'User profile not found'
+                }), 404
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error getting user profile: {str(e)}'
+            }), 500
+
+    @app.route('/api/save-quiz-result', methods=['POST'])
+    @require_auth
+    def save_quiz_result_api():
+        """Save quiz result for authenticated user"""
+        try:
+            uid = request.user['uid']
+            data = request.get_json()
+
+            quiz_data = {
+                'subject': data.get('subject'),
+                'score': data.get('score'),
+                'totalQuestions': data.get('totalQuestions'),
+                'timeTaken': data.get('timeTaken'),
+                'difficulty': data.get('difficulty', 'medium'),
+                'questions': data.get('questions', [])
+            }
+
+            success = save_quiz_result(uid, quiz_data)
+
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Quiz result saved successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to save quiz result'
+                }), 500
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error saving quiz result: {str(e)}'
+            }), 500
+
+    @app.route('/api/save-learning-session', methods=['POST'])
+    @require_auth
+    def save_learning_session_api():
+        """Save learning session for authenticated user"""
+        try:
+            uid = request.user['uid']
+            data = request.get_json()
+
+            session_data = {
+                'question': data.get('question'),
+                'subject': data.get('subject'),
+                'aiResponse': data.get('aiResponse'),
+                'sessionType': data.get('sessionType', 'question')
+            }
+
+            success = save_learning_session(uid, session_data)
+
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Learning session saved successfully'
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Failed to save learning session'
+                }), 500
+
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error saving learning session: {str(e)}'
+            }), 500
+
+    @app.route('/api/firebase-status', methods=['GET'])
+    def firebase_status():
+        """Check Firebase status"""
+        return jsonify({
+            'firebase_enabled': FIREBASE_ENABLED,
+            'firebase_initialized': is_firebase_available()
+        })
+
+else:
+    # Firebase disabled routes
+    @app.route('/api/firebase-status', methods=['GET'])
+    def firebase_status():
+        """Check Firebase status"""
+        return jsonify({
+            'firebase_enabled': False,
+            'firebase_initialized': False,
+            'message': 'Firebase is not available'
+        })
 
 
 if __name__ == '__main__':
