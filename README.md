@@ -23,12 +23,14 @@ An AI-powered personalized tutor and learning companion designed specifically fo
 
 ## 🎯 Quick Start
 
-Ready to experience AI-powered learning? 
+Ready to experience AI-powered learning?
 
 ### 🌐 Try the Live Demo
+
 **[Launch SmartLearn →](https://smartlearn-ai-90942.web.app/)**
 
 ### 📊 Explore Our Vision
+
 **[View Pitch Deck →](https://gamma.app/docs/SmartLearn--0fnpsai568kqchv)**
 
 ### � Run Locally
@@ -87,18 +89,21 @@ python app.py
 ## 🏗️ Architecture & Technology Stack
 
 ### 🔧 Backend
+
 - **Flask**: Lightweight web framework
 - **OpenAI GPT-4o**: Advanced AI tutoring
 - **Firebase Firestore**: Real-time database
 - **IntaSend**: Payment processing
 - **SQLite**: Local payment persistence
 
-### � Frontend  
+### � Frontend
+
 - **Vanilla JavaScript**: Interactive UI
 - **CSS3**: Modern responsive design
 - **HTML5**: Semantic structure
 
 ### ☁️ Deployment
+
 - **Firebase Hosting**: Global CDN
 - **GitHub Actions**: CI/CD pipeline
 - **Environment-based Configuration**: Dev/Prod separation
@@ -126,24 +131,28 @@ smartlearn/
 ## 🎮 Features in Action
 
 ### 🤖 AI Tutor
+
 - **Smart Responses**: GPT-4o powered explanations
 - **Curriculum Aligned**: KCSE/WAEC standards
 - **Contextual Learning**: African-focused examples
 - **Practice Questions**: Instant comprehension checks
 
 ### 🎯 Quiz Generator
+
 - **Unlimited Creation**: AI-generated quizzes on demand
 - **Multiple Difficulty**: Beginner → Advanced progression
 - **Real-time Feedback**: Instant scoring & explanations
 - **Performance Tracking**: Detailed analytics
 
 ### 📊 Learning Analytics
+
 - **Progress Monitoring**: Track learning journey
 - **Smart Recommendations**: AI-powered next steps
 - **Subject Insights**: Performance by topic
 - **Learning Patterns**: Identify strengths & gaps
 
 ### 💎 Premium Features
+
 - **Unlimited Quizzes**: Beyond 3 free attempts
 - **Advanced Analytics**: Deep performance insights
 - **Priority Support**: Faster response times
@@ -152,36 +161,42 @@ smartlearn/
 ## � Development Journey
 
 ### ✅ Phase 1: Foundation
+
 - [x] Flask application setup
-- [x] Clean project structure  
+- [x] Clean project structure
 - [x] Homepage with navigation
 - [x] "Ask the Tutor" interface
 
 ### ✅ Phase 2: AI Integration
+
 - [x] OpenAI GPT-4o API integration
 - [x] Subject-specific responses
 - [x] Curriculum-aligned content
 - [x] AI-generated practice questions
 
 ### ✅ Phase 3: Personalization
+
 - [x] Session-based tracking
 - [x] Learning analytics dashboard
 - [x] AI-powered recommendations
 - [x] Progress monitoring
 
 ### ✅ Phase 4: Quiz System
+
 - [x] AI quiz generation
 - [x] Interactive quiz interface
 - [x] Automated grading
 - [x] Performance analytics
 
 ### ✅ Phase 5: Monetization
+
 - [x] IntaSend payment integration
 - [x] Premium subscription model
 - [x] Webhook verification
 - [x] Secure payment processing
 
 ### 🔄 Phase 6: Production Ready
+
 - [ ] Enhanced UI/UX
 - [ ] Performance optimization
 - [ ] Advanced security
@@ -190,6 +205,7 @@ smartlearn/
 ## 🧪 Testing Guide
 
 ### 🌐 Live Demo Testing
+
 Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** and:
 
 1. **Ask the AI Tutor**: Try "Explain photosynthesis" in Biology
@@ -217,8 +233,9 @@ Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** an
 ### � AI Tutor Engine
 
 **Powered by OpenAI GPT-4o** with specialized prompts for:
+
 - **Curriculum Alignment**: KCSE, WAEC standards
-- **African Context**: Local examples and references  
+- **African Context**: Local examples and references
 - **Learning Styles**: Visual, auditory, kinesthetic approaches
 - **Difficulty Adaptation**: Beginner to advanced progression
 
@@ -231,20 +248,23 @@ Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** an
 ### 🎯 Smart Quiz System
 
 **AI-Generated Questions** featuring:
+
 - **Dynamic Creation**: Unlimited unique quizzes
 - **Adaptive Difficulty**: Questions match student level
 - **Instant Feedback**: Explanations for every answer
 - **Performance Tracking**: Identify learning gaps
 
 **Quiz Types:**
+
 - 🧠 Concept Check: Test understanding
-- 🔧 Problem Solving: Apply knowledge  
+- 🔧 Problem Solving: Apply knowledge
 - 💭 Critical Thinking: Analyze & evaluate
 - 🌍 Real-World Application: Practical scenarios
 
 ### 📊 Learning Analytics Engine
 
 **Smart Insights** including:
+
 - **Progress Monitoring**: Session duration, questions asked
 - **Performance Metrics**: Quiz scores, improvement trends
 - **Subject Analytics**: Strengths and weaknesses by topic
@@ -253,6 +273,7 @@ Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** an
 ### 💎 Premium Subscription
 
 **Monetization Features:**
+
 - **Free Tier**: 3 quiz generations per session
 - **Premium Tier**: Unlimited access + advanced features
 - **Secure Payments**: IntaSend integration with webhook verification
@@ -261,6 +282,7 @@ Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** an
 ## ⚙️ Configuration & Customization
 
 ### 🎨 Adding New Subjects
+
 ```html
 <!-- In templates/index.html -->
 <option value="Economics">Economics</option>
@@ -268,6 +290,7 @@ Visit **[smartlearn-ai-90942.web.app](https://smartlearn-ai-90942.web.app/)** an
 ```
 
 ### 🤖 AI Prompt Engineering
+
 ```python
 # In ai_tutor.py - customize teaching styles
 self.teaching_styles = {
@@ -277,6 +300,7 @@ self.teaching_styles = {
 ```
 
 ### 📊 Custom Analytics
+
 ```python
 # In student_session.py - add new metrics
 def get_engagement_score(self):
@@ -286,18 +310,21 @@ def get_engagement_score(self):
 ## 🔐 Security & Best Practices
 
 ### 🛡️ Environment Security
+
 - Never commit `.env` files
 - Use different API keys for dev/prod
 - Rotate secrets regularly
 - Enable GitHub secret scanning
 
-### 💳 Payment Security  
+### 💳 Payment Security
+
 - IntaSend webhook signature verification
 - HTTPS enforced in production
 - Secure session management
 - Payment data encryption
 
 ### 🔒 Data Protection
+
 - Session data isolation
 - No PII storage without consent
 - GDPR compliance considerations
@@ -306,6 +333,7 @@ def get_engagement_score(self):
 ## 🚀 Deployment Guide
 
 ### 🌐 Firebase Hosting (Current)
+
 ```bash
 # Build and deploy
 npm run build
@@ -313,6 +341,7 @@ firebase deploy
 ```
 
 ### 📦 Alternative Platforms
+
 - **Render**: Auto-deploy from GitHub
 - **Railway**: Container-based deployment
 - **Heroku**: Traditional PaaS option
@@ -329,6 +358,7 @@ We welcome contributions! Here's how to get started:
 5. **Submit PR**: Detailed description of changes
 
 ### 🎯 Areas for Contribution
+
 - 🌍 Localization (Swahili, French, Portuguese)
 - 🎨 UI/UX improvements
 - 🧪 Test coverage expansion
@@ -338,18 +368,21 @@ We welcome contributions! Here's how to get started:
 ## 📈 Roadmap
 
 ### 🎯 Short-term (Q1 2025)
+
 - [ ] Mobile app (React Native)
 - [ ] Offline mode capability
 - [ ] Voice interaction
 - [ ] Group study features
 
 ### 🌟 Medium-term (Q2-Q3 2025)
+
 - [ ] Multi-language support
 - [ ] Teacher dashboard
-- [ ] Parent progress reports  
+- [ ] Parent progress reports
 - [ ] Gamification elements
 
 ### 🚀 Long-term (Q4 2025+)
+
 - [ ] AR/VR learning experiences
 - [ ] Peer-to-peer tutoring
 - [ ] Scholarship recommendations
@@ -358,16 +391,19 @@ We welcome contributions! Here's how to get started:
 ## ⚠️ Important Notes
 
 ### 🔑 API Requirements
+
 - **OpenAI API Key**: Required for AI features
-- **Firebase Project**: Needed for data persistence  
+- **Firebase Project**: Needed for data persistence
 - **IntaSend Account**: Required for payment processing
 
 ### 💰 Cost Considerations
+
 - **OpenAI Usage**: ~$0.01-0.03 per AI interaction
 - **Firebase**: Free tier sufficient for development
 - **IntaSend**: 3.5% transaction fee
 
 ### 🏗️ Production Considerations
+
 - **Rate Limiting**: Implement for API protection
 - **Caching**: Add Redis for session storage
 - **Monitoring**: Use application performance monitoring
@@ -376,12 +412,14 @@ We welcome contributions! Here's how to get started:
 ## 🆘 Support & Community
 
 ### 📞 Get Help
+
 - 🐛 **Issues**: [GitHub Issues](https://github.com/Mayen007/smartlearn/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/Mayen007/smartlearn/discussions)  
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/Mayen007/smartlearn/discussions)
 - 📧 **Email**: Contact through pitch deck
 - 🌐 **Demo**: [Live Application](https://smartlearn-ai-90942.web.app/)
 
 ### 🔗 Resources
+
 - 📊 **Pitch Deck**: [View on Gamma](https://gamma.app/docs/SmartLearn--0fnpsai568kqchv)
 - 📚 **Documentation**: This comprehensive README
 - 🎥 **Demo Videos**: Coming soon
@@ -390,12 +428,14 @@ We welcome contributions! Here's how to get started:
 ## 🏆 Recognition
 
 ### 🎯 Impact Metrics
+
 - 🌍 **Target Market**: 50M+ African high school students
 - 💡 **Problem Solving**: Personalized education at scale
 - 🚀 **Innovation**: AI-first learning platform
 - 💰 **Revenue Model**: Freemium with premium features
 
 ### 🌟 Achievements
+
 - ✅ **MVP Completed**: Full working application
 - 🔄 **Iterative Development**: 6-phase agile approach
 - 🛡️ **Security First**: Production-ready security measures
