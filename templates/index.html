@@ -55,6 +55,8 @@
             <div class="hero-buttons">
                 <button class="btn btn-primary" data-action="scroll-to-tutor">Ask the Tutor</button>
                 <button class="btn btn-secondary" data-action="scroll-to-quiz">Generate Quiz</button>
+                <button class="btn btn-upgrade" id="upgrade-btn" data-action="upgrade-premium">Upgrade to
+                    Premium</button>
             </div>
         </div>
     </section>
@@ -238,6 +240,7 @@
                         <div class="loading-spinner"></div>
                         <p>Loading progress...</p>
                     </div>
+                    <div class="subscription-status" id="subscription-status"></div>
                 </div>
 
                 <!-- Learning Recommendations -->
@@ -378,6 +381,12 @@
 
     <!-- Firebase Authentication Script -->
     <script src="{{ url_for('static', filename='js/firebase-auth.js') }}"></script>
+
+    <!-- Notification / Modal Roots -->
+    <div id="toast-container" class="toast-container"></div>
+    <div id="modal-overlay" class="app-modal-overlay" style="display:none;">
+        <div id="modal-dialog" class="app-modal"></div>
+    </div>
 
     <!-- Main Application Script -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

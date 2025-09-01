@@ -57,9 +57,12 @@ SECRET_KEY=your-secret-key-here
 # OpenAI API Key (REQUIRED for AI features)
 OPENAI_API_KEY=your-openai-api-key-here
 
-# IntaSend API Keys (for Phase 6)
-INTASEND_PUBLIC_KEY=your-intasend-public-key-here
-INTASEND_SECRET_KEY=your-intasend-secret-key-here
+# IntaSend (Phase 6 Payments)
+INTASEND_SECRET_KEY=sk_test_xxx
+INTASEND_API_KEY=pk_test_xxx
+INTASEND_BASE_URL=https://sandbox.intasend.com/api/v1
+INTASEND_REDIRECT_URL=http://localhost:5000/payment/complete
+PREMIUM_PRICE=100
 ```
 
 ### 5. Run the Application
@@ -127,19 +130,16 @@ smartlearn/
 - [x] Multiple difficulty levels and quiz types
 - [x] Real-time quiz analytics
 
-### 🔄 Phase 5: Parent/Teacher Dashboard
+### ✅ Phase 5: Payments Integration (BASIC)
 
-- [ ] Progress tracking system
-- [ ] Low-code dashboard integration
-- [ ] Performance analytics
+- [x] IntaSend sandbox checkout initiation
+- [x] Free vs Premium subscription model (session-based)
+- [x] Quiz generation gating (3 free quizzes per session)
+- [x] Upgrade to Premium button & client flow
+- [ ] Webhook / payment verification (TODO)
+- [ ] Persistent subscription storage (TODO)
 
-### 🔄 Phase 6: Payments Integration
-
-- [ ] IntaSend API integration
-- [ ] Subscription management
-- [ ] Premium feature unlocking
-
-### 🔄 Phase 7: Polish & Deployment
+### 🔄 Phase 6: Polish & Deployment
 
 - [ ] TailwindCSS styling
 - [ ] Animations and UX improvements
@@ -285,12 +285,12 @@ Edit `static/js/main.js` to add new interactive features.
 
 ## 🚀 Next Steps
 
-**Phase 5: Parent/Teacher Dashboard**
+**Phase 6: Polish & Deployment**
 
-- Low-code dashboard integration (Glide, Airtable, Supabase)
-- Progress tracking and performance analytics
-- Student engagement monitoring
-- Learning outcome reporting
+- TailwindCSS integration & improved UI
+- Animations / micro-interactions
+- Deployment (Render / Railway / Replit)
+- Webhook verification & persistent subscription store
 
 ## ⚠️ Important Notes
 

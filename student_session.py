@@ -1,7 +1,5 @@
-"""
-SmartLearn Student Session Manager
-Handles session-based student tracking, question history, learning analytics, and quiz management
-"""
+"""SmartLearn Student Session Manager
+Handles session-based student tracking, question history, learning analytics, and quiz management."""
 
 import json
 from datetime import datetime, timedelta
@@ -13,30 +11,35 @@ import uuid
 
 class StudentSession:
     def __init__(self, session_id: str):
-        """Initialize a new student session"""
+        """Initialize a new student session."""
         self.session_id = session_id
         self.created_at = datetime.now()
         self.last_activity = datetime.now()
 
         # Learning data
-        self.questions_asked = []
-        self.quiz_attempts = []
+        self.questions_asked: List[Dict] = []
+        self.quiz_attempts: List[Dict] = []
         self.subjects_explored = set()
         self.learning_strengths = defaultdict(int)
         self.learning_gaps = defaultdict(int)
 
         # Quiz management (Phase 4)
-        self.generated_quizzes = {}
-        self.quiz_sessions = {}
-        self.quiz_history = []
+        self.generated_quizzes: Dict[str, Dict] = {}
+        self.quiz_sessions: Dict[str, Dict] = {}
+        self.quiz_history: List[Dict] = []
+
+        # Subscription / payments (Phase 6)
+        self.is_premium: bool = False  # upgraded after successful payment
+        self.quiz_generations: int = 0  # number of quizzes generated this session
+        self.free_quiz_limit: int = 3  # free tier limit
 
         # Session preferences
-        self.preferred_subjects = []
-        self.difficulty_level = "intermediate"
-        self.learning_style = "visual"  # visual, auditory, kinesthetic
+        self.preferred_subjects: List[str] = []
+        self.difficulty_level: str = "intermediate"
+        self.learning_style: str = "visual"  # visual, auditory, kinesthetic
 
     def add_question(self, subject: str, question: str, ai_response: Dict):
-        """Record a new question and AI response"""
+        """Record a new question and AI response."""
         question_data = {
             'id': len(self.questions_asked) + 1,
             'timestamp': datetime.now().isoformat(),
@@ -46,16 +49,13 @@ class StudentSession:
             'topic': self._extract_topic(question, subject),
             'difficulty': self._assess_difficulty(question, subject)
         }
-
         self.questions_asked.append(question_data)
         self.subjects_explored.add(subject)
         self.last_activity = datetime.now()
-
-        # Update learning analytics
         self._update_learning_analytics(question_data)
 
     def add_quiz_attempt(self, subject: str, quiz_data: Dict, score: int, time_taken: int):
-        """Record a quiz attempt"""
+        """Record a quiz attempt."""
         quiz_attempt = {
             'id': len(self.quiz_attempts) + 1,
             'timestamp': datetime.now().isoformat(),
@@ -65,30 +65,25 @@ class StudentSession:
             'time_taken': time_taken,
             'topic': quiz_data.get('topic', 'General')
         }
-
         self.quiz_attempts.append(quiz_attempt)
         self.last_activity = datetime.now()
-
-        # Update performance analytics
         self._update_performance_analytics(quiz_attempt)
 
     def add_generated_quiz(self, quiz_data: Dict) -> str:
-        """Add a generated quiz to the session and return quiz ID"""
+        """Add a generated quiz to the session and return quiz ID."""
         quiz_id = str(uuid.uuid4())
-
         quiz_record = {
             'id': quiz_id,
             'timestamp': datetime.now().isoformat(),
             'quiz_data': quiz_data,
-            'status': 'generated',  # generated, started, completed
+            'status': 'generated',
             'started_at': None,
             'completed_at': None,
             'results': None
         }
-
         self.generated_quizzes[quiz_id] = quiz_record
         self.last_activity = datetime.now()
-
+        self.quiz_generations += 1
         return quiz_id
 
     def get_quiz(self, quiz_id: str) -> Optional[Dict]:
@@ -310,43 +305,52 @@ class StudentSession:
         return recommendations[:5]  # Return top 5 recommendations
 
     def get_progress_summary(self) -> Dict:
-        """Get a summary of learning progress including quiz performance"""
+        """Return aggregate session progress summary."""
         total_questions = len(self.questions_asked)
         total_quizzes = len(self.quiz_attempts)
-        average_score = self._calculate_overall_average_score()
-
+        quiz_scores = [q['score'] for q in self.quiz_attempts]
+        average_quiz_score = sum(quiz_scores) / len(quiz_scores) if quiz_scores else 0
         # Calculate session duration
-        session_duration = datetime.now() - self.created_at
-
-        # Identify most active subject
+        session_duration_minutes = int((datetime.now() - self.created_at).total_seconds() / 60)
+        # Determine most active subject
         subject_counts = defaultdict(int)
         for q in self.questions_asked:
             subject_counts[q['subject']] += 1
-
-        most_active_subject = max(subject_counts.items(), key=lambda x: x[1])[
-            0] if subject_counts else None
-
-        # Quiz performance summary
-        quiz_summary = {
-            'total_quizzes_taken': total_quizzes,
-            'quizzes_generated': len(self.generated_quizzes),
-            'active_quizzes': len(self.get_active_quizzes()),
-            'average_quiz_score': average_score,
-            'best_performing_subject': self._get_best_performing_subject(),
-            'improvement_areas': self._get_improvement_areas()
-        }
-
-        return {
-            'session_duration_minutes': int(session_duration.total_seconds() / 60),
+        most_active_subject = None
+        if subject_counts:
+            most_active_subject = max(subject_counts.items(), key=lambda x: x[1])[0]
+        progress = {
             'total_questions': total_questions,
             'total_quizzes': total_quizzes,
-            'average_quiz_score': average_score,
+            'average_quiz_score': round(average_quiz_score, 2),
             'subjects_explored': list(self.subjects_explored),
+            'plan': 'Premium' if self.is_premium else 'Free',
+            'quiz_generations': self.quiz_generations,
+            'free_quiz_limit': self.free_quiz_limit,
+            'session_duration_minutes': session_duration_minutes,
             'most_active_subject': most_active_subject,
-            'learning_strength': max(self.learning_strengths.items(), key=lambda x: x[1])[0] if self.learning_strengths else None,
-            'learning_gap': max(self.learning_gaps.items(), key=lambda x: x[1])[0] if self.learning_gaps else None,
-            'quiz_performance': quiz_summary
         }
+        # Quiz performance extras
+        progress['quiz_performance'] = {
+            'quizzes_generated': len(self.generated_quizzes),
+            'best_performing_subject': self._get_best_performing_subject()
+        }
+        return progress
+
+    # ---------------- Subscription helpers (Phase 6) -----------------
+    def can_generate_quiz(self) -> bool:
+        """Return True if user can generate another quiz under current plan."""
+        if self.is_premium:
+            return True
+        return self.quiz_generations < self.free_quiz_limit
+
+    def remaining_free_quizzes(self) -> int:
+        if self.is_premium:
+            return -1  # unlimited
+        return max(self.free_quiz_limit - self.quiz_generations, 0)
+
+    def upgrade_to_premium(self):
+        self.is_premium = True
 
     def _extract_topic(self, question: str, subject: str) -> str:
         """Extract topic from question (simplified)"""

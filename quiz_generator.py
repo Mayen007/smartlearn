@@ -5,15 +5,23 @@ Handles AI-generated quiz creation, quiz sessions, and automated grading
 
 import os
 import openai
+import requests
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime
 import random
 import json
+from dotenv import load_dotenv
 
 class QuizGenerator:
     def __init__(self):
         """Initialize the quiz generator with OpenAI client"""
+        # Load environment variables from .env file
+        load_dotenv()
+        
         self.client = None
+        self.huggingface_api_key = os.getenv('HUGGINGFACE_API_KEY')
+        self.use_huggingface = os.getenv(
+            'USE_HUGGINGFACE', 'false').lower() == 'true'
         self._initialize_client()
         
         # Quiz difficulty levels
@@ -35,47 +43,113 @@ class QuizGenerator:
         """Initialize OpenAI client with error handling"""
         try:
             api_key = os.getenv('OPENAI_API_KEY')
-            if api_key:
-                self.client = openai.OpenAI(api_key=api_key)
-                print("✅ Quiz Generator OpenAI client initialized successfully")
+            if api_key and api_key.startswith('sk-'):
+                try:
+                    self.client = openai.OpenAI(api_key=api_key)
+                    print("✅ Quiz Generator OpenAI client initialized successfully")
+                    # Test the connection
+                    self._test_openai_connection()
+                except Exception as e:
+                    print(f"⚠️  Quiz Generator OpenAI SDK init failed, enabling HTTP fallback: {e}")
+                    openai.api_key = api_key
+                    self.openai_api_key = api_key
+                    self.client = True
+                    self.openai_via_http = True
+                    try:
+                        self._test_openai_connection()
+                    except Exception:
+                        pass
             else:
-                print("⚠️  Quiz Generator: OPENAI_API_KEY not found in environment variables")
+                print("⚠️  Quiz Generator: OPENAI_API_KEY not found or invalid in environment variables")
                 self.client = None
         except Exception as e:
             print(f"❌ Quiz Generator: Error initializing OpenAI client: {str(e)}")
             self.client = None
+
+    def _test_openai_connection(self):
+        """Test OpenAI connection with a simple request"""
+        try:
+            if self.client:
+                resp = self._call_openai_chat(messages=[{"role": "user", "content": "Hello"}], model="gpt-3.5-turbo", max_tokens=10, temperature=0.0, timeout=10)
+                text = self._get_response_text(resp)
+                if text is not None:
+                    print("✅ Quiz Generator OpenAI connection test successful")
+        except Exception as e:
+            print(f"⚠️  Quiz Generator OpenAI connection test failed: {str(e)}")
     
     def generate_quiz(self, subject: str, topic: str, difficulty: str = 'intermediate', 
                      quiz_type: str = 'concept_check', num_questions: int = 5) -> Dict:
-        """Generate a complete quiz using AI"""
+        """Generate a complete quiz using AI with improved error handling"""
         
-        if not self.client:
-            print("⚠️  Quiz Generator: Using fallback quiz (OpenAI not available)")
-            return self._generate_fallback_quiz(subject, topic, difficulty, num_questions)
+        print(f"🔍 generate_quiz called for subject: {subject}, topic: {topic}")
+        print(f"🔍 OpenAI client status: {self.client is not None}")
+        print(f"� Hugging Face enabled: {self.use_huggingface}")
         
+        # Try OpenAI first
+        if self.client:
+            try:
+                print("🚀 Attempting OpenAI API call...")
+                return self._generate_openai_quiz(subject, topic, difficulty, quiz_type, num_questions)
+            except Exception as e:
+                print(f"❌ OpenAI failed: {str(e)}")
+
+        # Fallback to Hugging Face if enabled
+        if self.use_huggingface and self.huggingface_api_key:
+            try:
+                print("🚀 Attempting Hugging Face API call...")
+                return self._generate_huggingface_quiz(subject, topic, difficulty, quiz_type, num_questions)
+            except Exception as e:
+                print(f"❌ Hugging Face failed: {str(e)}")
+
+        # Final fallback to generic quiz
+        print("⚠️  All AI services failed, using fallback quiz")
+        return self._generate_fallback_quiz(subject, topic, difficulty, num_questions)
+
+    def _generate_openai_quiz(self, subject: str, topic: str, difficulty: str, 
+                             quiz_type: str, num_questions: int) -> Dict:
+        """Generate quiz using OpenAI with improved error handling"""
         try:
             # Generate quiz prompt
             prompt = self._create_quiz_prompt(subject, topic, difficulty, quiz_type, num_questions)
+            print(f"📝 Generated quiz prompt length: {len(prompt)} characters")
             
-            # Call OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are SmartLearn, an expert quiz creator for African high school students. Create engaging, curriculum-aligned multiple-choice questions."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=2000,
-                temperature=0.7
-            )
+            # Call OpenAI API with retry logic
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "You are SmartLearn, an expert quiz creator for African high school students. Create engaging, curriculum-aligned multiple-choice questions."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=2000,
+                        temperature=0.7,
+                        timeout=30  # Add timeout
+                    )
+                    break  # Success, exit retry loop
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise e  # Last attempt failed
+                    print(f"⚠️  Quiz Generator attempt {attempt + 1} failed, retrying...")
+                    import time
+                    time.sleep(1)  # Wait before retry
             
+            print("✅ Quiz Generator OpenAI API call successful!")
             # Extract the response content
             ai_response = response.choices[0].message.content
+            print(f"📄 AI quiz response length: {len(ai_response)} characters")
+            
+            # Validate response
+            if not ai_response or len(ai_response.strip()) < 100:
+                raise Exception("AI quiz response too short or empty")
             
             # Parse the quiz from AI response
             quiz_data = self._parse_quiz_response(ai_response, subject, topic, difficulty, quiz_type)
             
             # Validate quiz data
             if not self._validate_quiz(quiz_data, num_questions):
+                print("⚠️  Quiz validation failed, using fallback")
                 # Generate fallback quiz if AI parsing fails
                 quiz_data = self._generate_fallback_quiz(subject, topic, difficulty, num_questions)
             
@@ -87,15 +161,115 @@ class QuizGenerator:
                 'quiz_type': quiz_type,
                 'num_questions': len(quiz_data['questions']),
                 'generated_at': datetime.now().isoformat(),
-                'time_limit': self._calculate_time_limit(difficulty, num_questions)
+                'time_limit': self._calculate_time_limit(difficulty, num_questions),
+                'ai_provider': 'openai'
             }
             
             return quiz_data
             
         except Exception as e:
-            print(f"Error generating quiz: {str(e)}")
-            # Return fallback quiz
-            return self._generate_fallback_quiz(subject, topic, difficulty, num_questions)
+            print(f"❌ OpenAI quiz generation failed: {str(e)}")
+            raise e
+
+    def _generate_huggingface_quiz(self, subject: str, topic: str, difficulty: str, 
+                                  quiz_type: str, num_questions: int) -> Dict:
+        """Generate quiz using Hugging Face Inference API with better error handling"""
+        try:
+            print("🔄 Using Hugging Face Inference API for quiz generation")
+
+            # Create a structured prompt for quiz generation
+            prompt = f"""Create a {difficulty} level quiz for {subject} about {topic}.
+
+Generate {num_questions} multiple-choice questions with 4 options each (A, B, C, D).
+
+Format:
+QUESTION 1: [Question]
+A) [Option A]
+B) [Option B] 
+C) [Option C]
+D) [Option D]
+CORRECT: [A/B/C/D]
+EXPLANATION: [Brief explanation]
+
+Make questions educational for African high school students."""
+
+            headers = {"Authorization": f"Bearer {self.huggingface_api_key}"}
+
+            # Try reliable models for quiz generation
+            models_to_try = [
+                "microsoft/DialoGPT-medium",
+                "gpt2",
+                "distilgpt2"
+            ]
+
+            ai_response = ""
+            for model in models_to_try:
+                try:
+                    payload = {
+                        "inputs": prompt,
+                        "parameters": {
+                            "max_length": 500,
+                            "temperature": 0.7,
+                            "do_sample": True
+                        }
+                    }
+
+                    response = requests.post(
+                        f"https://api-inference.huggingface.co/models/{model}",
+                        headers=headers,
+                        json=payload,
+                        timeout=25
+                    )
+
+                    print(f"📊 Quiz Model {model} - Status: {response.status_code}")
+
+                    if response.status_code == 200:
+                        result = response.json()
+                        print(f"📊 Raw quiz response: {result}")
+
+                        if isinstance(result, list) and len(result) > 0:
+                            generated = result[0].get('generated_text', '')
+                            if generated and len(generated) > len(prompt):
+                                ai_response = generated.replace(prompt, "").strip()
+                                if len(ai_response) > 50:
+                                    print(f"✅ Quiz Model {model} successful!")
+                                    break
+
+                except Exception as e:
+                    print(f"⚠️  Quiz Model {model} failed: {str(e)}")
+                    continue
+
+            # Validate response
+            if not ai_response or len(ai_response.strip()) < 50:
+                raise Exception("No valid quiz response from any Hugging Face model")
+
+            print(f"📄 Final AI quiz response: {ai_response[:300]}...")
+
+            # Parse the quiz from AI response
+            quiz_data = self._parse_quiz_response(ai_response, subject, topic, difficulty, quiz_type)
+
+            # Validate quiz data
+            if not self._validate_quiz(quiz_data, num_questions):
+                print("⚠️  Hugging Face quiz validation failed, using fallback")
+                quiz_data = self._generate_fallback_quiz(subject, topic, difficulty, num_questions)
+
+            # Add metadata
+            quiz_data['metadata'] = {
+                'subject': subject,
+                'topic': topic,
+                'difficulty': difficulty,
+                'quiz_type': quiz_type,
+                'num_questions': len(quiz_data['questions']),
+                'generated_at': datetime.now().isoformat(),
+                'time_limit': self._calculate_time_limit(difficulty, num_questions),
+                'ai_provider': 'huggingface'
+            }
+
+            return quiz_data
+
+        except Exception as e:
+            print(f"❌ Hugging Face quiz generation error: {str(e)}")
+            raise e
     
     def _create_quiz_prompt(self, subject: str, topic: str, difficulty: str, 
                            quiz_type: str, num_questions: int) -> str:
@@ -489,3 +663,58 @@ def get_quiz_generator():
     if quiz_generator is None:
         quiz_generator = QuizGenerator()
     return quiz_generator
+
+    def _call_openai_chat(self, **kwargs):
+        """Adapter to call OpenAI chat/completions across SDK versions for quiz_generator."""
+        if not self.client:
+            raise Exception("OpenAI client not initialized")
+
+        try:
+            if hasattr(self.client, 'chat') and hasattr(self.client.chat, 'completions'):
+                return self.client.chat.completions.create(**kwargs)
+        except Exception:
+            pass
+
+        try:
+            return openai.ChatCompletion.create(**kwargs)
+        except Exception as e:
+            try:
+                return openai.Completion.create(**kwargs)
+            except Exception:
+                raise e
+
+    def _get_response_text(self, resp) -> Optional[str]:
+        """Normalize different OpenAI response shapes to a text string for quiz_generator."""
+        if resp is None:
+            return None
+
+        try:
+            if hasattr(resp, 'choices'):
+                choice = resp.choices[0]
+                if hasattr(choice, 'message') and hasattr(choice.message, 'content'):
+                    return choice.message.content
+                if isinstance(choice, dict) and 'message' in choice and 'content' in choice['message']:
+                    return choice['message']['content']
+                if 'text' in choice:
+                    return choice['text']
+        except Exception:
+            pass
+
+        try:
+            if isinstance(resp, dict):
+                if 'choices' in resp and len(resp['choices']) > 0:
+                    ch = resp['choices'][0]
+                    if isinstance(ch, dict):
+                        if 'message' in ch and 'content' in ch['message']:
+                            return ch['message']['content']
+                        if 'text' in ch:
+                            return ch['text']
+                if 'generated_text' in resp:
+                    return resp['generated_text']
+        except Exception:
+            pass
+
+        try:
+            return str(resp)
+        except Exception:
+            return None

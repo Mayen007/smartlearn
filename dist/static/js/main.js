@@ -1081,7 +1081,60 @@ function setupNavigationHandlers() {
     });
   });
 
-  // Mobile menu toggle
+  // Professional navbar scroll effect
+  const navbar = document.querySelector('.navbar');
+  let lastScrollTop = 0;
+
+  window.addEventListener('scroll', function () {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Add scrolled class for enhanced styling
+    if (scrollTop > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+
+    // Enhanced auto-hide navbar on scroll down
+    if (scrollTop > lastScrollTop && scrollTop > 100) {
+      navbar.style.transform = 'translateY(-100%)';
+      navbar.style.transition = 'transform 0.3s ease-in-out';
+    } else {
+      navbar.style.transform = 'translateY(0)';
+      navbar.style.transition = 'transform 0.3s ease-in-out';
+    }
+    
+    lastScrollTop = scrollTop;
+  });
+
+  // Enhanced smooth scrolling for navigation links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', function (e) {
+      const href = this.getAttribute('href');
+      
+      // Only prevent default for anchor links
+      if (href && href.startsWith('#')) {
+        e.preventDefault();
+        const targetSection = document.querySelector(href);
+
+        if (targetSection) {
+          const navbar = document.querySelector('.navbar');
+          const navbarHeight = navbar.offsetHeight;
+          const targetPosition = targetSection.offsetTop - navbarHeight - 20;
+          
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+          
+          // Close mobile menu
+          closeMobileMenu();
+        }
+      }
+    });
+  });
+
+  // Enhanced mobile menu toggle with body scroll prevention
   const navToggle = document.getElementById('nav-toggle');
   const navMenu = document.getElementById('nav-menu');
 
@@ -1089,14 +1142,29 @@ function setupNavigationHandlers() {
     navToggle.addEventListener('click', function () {
       navToggle.classList.toggle('active');
       navMenu.classList.toggle('active');
+      
+      // Prevent body scroll when menu is open
+      if (navMenu.classList.contains('active')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     });
   }
 
-  // Close mobile menu when clicking outside
+  // Enhanced click outside detection
   document.addEventListener('click', function (event) {
     if (navToggle && navMenu && !navToggle.contains(event.target) && !navMenu.contains(event.target)) {
       navToggle.classList.remove('active');
       navMenu.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Add escape key support for mobile menu
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && navMenu && navMenu.classList.contains('active')) {
+      closeMobileMenu();
     }
   });
 }
@@ -1117,7 +1185,7 @@ function addAIStatusIndicator() {
   }
 }
 
-// Close mobile menu when clicking on a link
+// Enhanced mobile menu closure
 function closeMobileMenu() {
   const navToggle = document.getElementById('nav-toggle');
   const navMenu = document.getElementById('nav-menu');
@@ -1125,5 +1193,6 @@ function closeMobileMenu() {
   if (navToggle && navMenu) {
     navToggle.classList.remove('active');
     navMenu.classList.remove('active');
+    document.body.style.overflow = ''; // Restore body scrolling
   }
 }

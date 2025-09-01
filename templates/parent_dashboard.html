@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartLearn Parent Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <style>
+    .parent-container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .summary-banner {
+      background: #1e3a8a;
+      color: #fff;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media(min-width:900px) {
+      .grid.cols-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      font-size: 1rem;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .metric {
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0.25rem 0 0.5rem;
+      color: #0f172a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      padding: 0.5rem 0.6rem;
+      text-align: left;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #475569;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.25rem 0.55rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      letter-spacing: .5px;
+    }
+
+    .pill.low {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .pill.mid {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .pill.high {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .list li {
+      padding: 0.4rem 0;
+      border-bottom: 1px dashed #e2e8f0;
+      font-size: 0.85rem;
+    }
+
+    .list li:last-child {
+      border-bottom: none;
+    }
+
+    .empty {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      background: #2563eb;
+      color: #fff;
+      padding: 0.55rem 0.9rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .btn.secondary {
+      background: #475569;
+    }
+
+    .btn.outline {
+      background: #fff;
+      color: #1e3a8a;
+      border: 1px solid #1e3a8a;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      background: #22c55e;
+    }
+
+    body {
+      background: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="parent-container">
+    <div class="toolbar">
+      <a class="btn outline" href="/">← Back</a>
+      <button class="btn" onclick="reloadParent()">Refresh</button>
+      <button class="btn secondary" onclick="exportCSV()">Export CSV</button>
+    </div>
+
+    <div id="summary" class="summary-banner">Loading summary...</div>
+
+    <div class="grid cols-3">
+      <div class="card" id="card-overview">
+        <h3>Overview</h3>
+        <div class="metric" id="metric-avg-score">--%</div>
+        <div class="muted" id="metric-totals">Quizzes: -- • Questions: --</div>
+        <ul class="list" id="focus-subjects"></ul>
+      </div>
+
+      <div class="card" id="card-recent-quizzes">
+        <h3>Recent Quiz Attempts</h3>
+        <table id="recent-quizzes-table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Score</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="card-recommendations">
+        <h3>Recommendations</h3>
+        <ul class="list" id="recommendations-list"></ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1.25rem;">
+      <h3>Subject Performance</h3>
+      <table id="subjects-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Questions</th>
+            <th>Quizzes</th>
+            <th>Avg Score</th>
+            <th>Focus</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:1.25rem;">
+      <h3>Recent Activity (Mixed)</h3>
+      <ul class="list" id="activity-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    async function fetchParentData() {
+      const res = await fetch('/learning/dashboard?mode=parent');
+      if (!res.ok) throw new Error('Failed to load dashboard');
+      return res.json();
+    }
+
+    function pillClass(score) {
+      if (score >= 80) return 'pill high';
+      if (score >= 60) return 'pill mid';
+      return 'pill low';
+    }
+
+    function formatPct(v) { return (v ?? 0).toFixed(0) + '%'; }
+
+    function exportCSV() {
+      if (!window.__parentData) return;
+      const rows = [['Subject', 'Questions', 'Quizzes', 'Average Score']];
+      for (const [subject, data] of Object.entries(window.__parentData.subject_analytics || {})) {
+        rows.push([subject, data.questions_asked, data.quiz_attempts, data.average_quiz_score]);
+      }
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'smartlearn_subject_performance.csv';
+      a.click();
+    }
+
+    function render(data) {
+      window.__parentData = data;
+      document.getElementById('summary').textContent = data.summary_text || 'No summary available yet.';
+
+      // Overview
+      const avg = data.progress_summary?.average_quiz_score || 0;
+      document.getElementById('metric-avg-score').textContent = formatPct(avg);
+      document.getElementById('metric-totals').textContent = `Quizzes: ${data.progress_summary.total_quizzes} • Questions: ${data.progress_summary.total_questions}`;
+
+      // Focus subjects
+      const fsEl = document.getElementById('focus-subjects');
+      fsEl.innerHTML = '';
+      (data.focus_subjects || []).forEach(s => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="pill low">Focus</span> ${s}`;
+        fsEl.appendChild(li);
+      });
+      if (!fsEl.innerHTML) fsEl.innerHTML = '<li class="empty">No focus subjects identified.</li>';
+
+      // Recent quizzes (from quiz_history)
+      const tq = document.querySelector('#recent-quizzes-table tbody');
+      tq.innerHTML = '';
+      (data.quiz_history || []).slice(0, 5).forEach(q => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${q.subject}</td><td>${formatPct(q.score)}</td><td>${q.time_taken || 0}s</td>`;
+        tq.appendChild(tr);
+      });
+      if (!tq.innerHTML) tq.innerHTML = '<tr><td colspan="3" class="empty">No quizzes yet.</td></tr>';
+
+      // Recommendations
+      const recList = document.getElementById('recommendations-list');
+      recList.innerHTML = '';
+      (data.learning_recommendations || []).slice(0, 5).forEach(r => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${r.title}</strong><br><span class="muted">${r.description}</span>`;
+        recList.appendChild(li);
+      });
+      if (!recList.innerHTML) recList.innerHTML = '<li class="empty">None yet.</li>';
+
+      // Subjects table
+      const stBody = document.querySelector('#subjects-table tbody');
+      stBody.innerHTML = '';
+      for (const [subject, dataObj] of Object.entries(data.subject_analytics || {})) {
+        const score = dataObj.average_quiz_score || 0;
+        const focus = score < 60 ? '<span class="pill low">Focus</span>' : (score < 80 ? '<span class="pill mid">Improve</span>' : '<span class="pill high">Strong</span>');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${subject}</td><td>${dataObj.questions_asked}</td><td>${dataObj.quiz_attempts}</td><td>${formatPct(score)}</td><td>${focus}</td>`;
+        stBody.appendChild(tr);
+      }
+      if (!stBody.innerHTML) stBody.innerHTML = '<tr><td colspan="5" class="empty">No subject data yet.</td></tr>';
+
+      // Activity list
+      const actList = document.getElementById('activity-list');
+      actList.innerHTML = '';
+      (data.recent_activity || []).forEach(a => {
+        const li = document.createElement('li');
+        if (a.type === 'quiz') {
+          li.innerHTML = `<strong>Quiz</strong> • ${a.data.subject} • Score: ${formatPct(a.data.score)} <span class="muted">(${a.timestamp.split('T')[0]})</span>`;
+        } else {
+          li.innerHTML = `<strong>Question</strong> • ${a.data.subject} • ${a.data.question.slice(0, 60)}… <span class="muted">(${a.timestamp.split('T')[0]})</span>`;
+        }
+        actList.appendChild(li);
+      });
+      if (!actList.innerHTML) actList.innerHTML = '<li class="empty">No activity yet.</li>';
+    }
+
+    async function reloadParent() {
+      document.getElementById('summary').textContent = 'Loading summary...';
+      try {
+        const data = await fetchParentData();
+        render(data);
+      } catch (e) {
+        document.getElementById('summary').textContent = 'Failed to load.';
+        console.error(e);
+      }
+    }
+
+    reloadParent();
+  </script>
+</body>
+
+</html>

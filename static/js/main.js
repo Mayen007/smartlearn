@@ -68,7 +68,7 @@ async function askTutor() {
 
   // Validation
   if (!question) {
-    alert('Please enter your question!');
+    showToast('Please enter your question.', 'warning');
     return;
   }
 
@@ -310,12 +310,11 @@ function selectAnswer(answer, element) {
 // Check quiz answer
 async function checkAnswer() {
   if (!selectedAnswer) {
-    alert('Please select an answer first!');
+    showToast('Select an answer first.', 'warning');
     return;
   }
-
   if (!currentQuizData) {
-    alert('No quiz data available!');
+    showToast('No quiz data available.', 'error');
     return;
   }
 
@@ -427,7 +426,7 @@ async function generateQuiz() {
 
   // Validation
   if (!subject || !topic) {
-    alert('Please select both subject and topic!');
+    showToast('Select both subject and topic.', 'warning');
     return;
   }
 
@@ -450,6 +449,12 @@ async function generateQuiz() {
     });
 
     if (!response.ok) {
+      if (response.status === 402) {
+        const data = await response.json();
+        showQuizError(data.error || 'Free plan limit reached. Upgrade to continue.');
+        highlightUpgradeCTA();
+        return;
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -458,6 +463,8 @@ async function generateQuiz() {
     if (data.success) {
       currentQuiz = data.quiz;
       displayQuiz(currentQuiz);
+      // Refresh subscription status (quiz count)
+      loadSubscriptionStatus();
     } else {
       throw new Error(data.error || 'Failed to generate quiz');
     }
@@ -489,7 +496,7 @@ function showQuizLoading() {
 }
 
 function showQuizError(message) {
-  alert(`Quiz Generation Error: ${message}`);
+  showToast(`Quiz generation error: ${message}`, 'error');
 }
 
 function displayQuiz(quizData) {
@@ -618,7 +625,7 @@ function startQuizTimer(timeLimitSeconds) {
     if (timeRemaining <= 0) {
       // Time's up - auto-submit quiz
       clearInterval(quizTimer);
-      alert('Time\'s up! Submitting quiz automatically.');
+      showToast('Time\'s up! Submitting quiz automatically.', 'info');
       submitQuiz();
       return;
     }
@@ -666,7 +673,7 @@ async function submitQuiz() {
 
   } catch (error) {
     console.error('Error submitting quiz:', error);
-    alert(`Failed to submit quiz: ${error.message}`);
+    showToast(`Failed to submit quiz: ${error.message}`, 'error');
   }
 }
 
@@ -953,25 +960,24 @@ function displayRecentActivity(activities) {
 
 // Session management
 async function resetSession() {
-  if (confirm('Are you sure you want to reset your learning session? This will clear all progress data.')) {
-    try {
-      const response = await fetch('/session/reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        alert('Session reset successfully! Your learning journey starts fresh.');
-        loadDashboard(); // Refresh dashboard
-      } else {
-        throw new Error('Failed to reset session');
-      }
-    } catch (error) {
-      console.error('Error resetting session:', error);
-      alert('Failed to reset session. Please try again.');
+  const confirmed = await showConfirm({
+    title: 'Reset Session?',
+    message: 'This will clear all progress data for this session. Continue?',
+    confirmText: 'Reset',
+    variant: 'danger'
+  });
+  if (!confirmed) return;
+  try {
+    const response = await fetch('/session/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    if (response.ok) {
+      showToast('Session reset. Fresh start!', 'success');
+      loadDashboard();
+    } else {
+      throw new Error('Failed');
     }
+  } catch (e) {
+    console.error(e);
+    showToast('Failed to reset session.', 'error');
   }
 }
 
@@ -1015,6 +1021,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load dashboard on page load
   loadDashboard();
+  loadSubscriptionStatus();
 
   console.log('All required elements found, application ready');
 });
@@ -1042,6 +1049,9 @@ function handleButtonActions(event) {
     case 'check-answer':
       checkAnswer();
       break;
+    case 'upgrade-premium':
+      showPremiumUpgradeModal();
+      break;
     default:
       console.warn('Unknown action:', action);
   }
@@ -1064,20 +1074,20 @@ function setupNavigationHandlers() {
   // Handle navigation links
   document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', function (e) {
-      e.preventDefault();
-      const targetId = this.getAttribute('href');
-      const targetSection = document.querySelector(targetId);
-
-      if (targetSection) {
-        const offsetTop = targetSection.offsetTop - 80; // Account for fixed navbar
-        window.scrollTo({
-          top: offsetTop,
-          behavior: 'smooth'
-        });
+      const href = this.getAttribute('href') || '';
+      // In-page smooth scroll only for hash targets
+      if (href.startsWith('#')) {
+        e.preventDefault();
+        const targetSection = document.querySelector(href);
+        if (targetSection) {
+          const offsetTop = targetSection.offsetTop - 80; // account for fixed nav
+          window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+        }
+        closeMobileMenu();
+      } else if (href.startsWith('/')) {
+        // Allow normal navigation to other non-hash routes
+        closeMobileMenu();
       }
-
-      // Close mobile menu
-      closeMobileMenu();
     });
   });
 
@@ -1127,3 +1137,197 @@ function closeMobileMenu() {
     navMenu.classList.remove('active');
   }
 }
+
+// ---------------- Subscription / Payments (Phase 6) -----------------
+async function loadSubscriptionStatus() {
+  try {
+    // If a pending reference is stored locally, query with it
+    const pendingRef = localStorage.getItem('pendingUpgradeReference');
+    const query = pendingRef ? ('?reference=' + encodeURIComponent(pendingRef)) : '';
+    const resp = await fetch('/payment/status' + query);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const btn = document.getElementById('upgrade-btn');
+    if (btn) {
+      if (data.plan === 'Premium') {
+        btn.textContent = 'Premium Active';
+        btn.disabled = true;
+        btn.classList.add('premium-active');
+        localStorage.removeItem('pendingUpgradeReference');
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Upgrade to Premium';
+      }
+    }
+
+    // Render subscription status chip if any
+    const subStatusEl = document.getElementById('subscription-status');
+    if (subStatusEl) {
+      const planChip = `<span class="subscription-chip ${data.plan === 'Premium' ? 'premium' : 'free'}">${data.plan}</span>`;
+      let extra = '';
+      if (data.plan !== 'Premium') {
+        extra = `<span class="subscription-meta">${data.remaining_free_quizzes} free quiz${data.remaining_free_quizzes === 1 ? '' : 'zes'} left</span>`;
+      }
+      // Pending payment info
+      if (pendingRef && data.payment && data.payment.status === 'pending') {
+        extra += ` <span class="payment-badge pending">Payment Pending...</span>`;
+      } else if (pendingRef && data.payment && data.payment.status === 'completed' && data.plan !== 'Premium') {
+        extra += ` <span class="payment-badge completed">Payment Confirmed - Activating...</span>`;
+      }
+      subStatusEl.innerHTML = planChip + ' ' + extra;
+    }
+  } catch (e) {
+    console.warn('Failed to load subscription status', e);
+  }
+}
+
+function highlightUpgradeCTA() {
+  const btn = document.getElementById('upgrade-btn');
+  if (btn) {
+    btn.classList.add('upgrade-pulse');
+    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+async function initiateUpgrade() {
+  const email = await showPrompt({
+    title: 'Upgrade to Premium',
+    message: 'Enter your email to begin the secure checkout process.',
+    placeholder: 'you@example.com',
+    submitText: 'Continue'
+  });
+  if (!email) return;
+  try {
+    const resp = await fetch('/payment/upgrade', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const data = await resp.json();
+    if (data.success && data.checkout_url) {
+      showToast('Redirecting to payment...', 'info');
+      setTimeout(() => window.location.href = data.checkout_url, 600);
+    } else if (data.already_premium) {
+      showToast('You already have Premium.', 'success');
+    } else {
+      showToast(data.error || 'Failed to initiate upgrade.', 'error');
+    }
+  } catch (e) {
+    showToast('Upgrade failed: ' + e.message, 'error');
+  }
+}
+
+// New premium upgrade modal (improved UX)
+function showPremiumUpgradeModal() {
+  const pendingRef = localStorage.getItem('pendingUpgradeReference');
+  const pendingNotice = pendingRef ? `<div class="upgrade-pending-note">An upgrade is currently pending verification (Ref: ${pendingRef}). If you completed payment, it will activate shortly.</div>` : '';
+  openModal(`
+    <button class='modal-close-btn' aria-label='Close'>×</button>
+    <h3 class='modal-title'>Unlock Premium</h3>
+    <p class='modal-subtitle'>Go unlimited and accelerate your learning.</p>
+    ${pendingNotice}
+    <div class='premium-plan-box'>
+      <div class='plan-price'>KES <strong>100</strong> <span class='plan-price-period'>one-time (demo)</span></div>
+      <ul class='premium-feature-list'>
+        <li><span>✅</span> Unlimited quiz generations (Free gives 3)</li>
+        <li><span>⚡</span> Priority AI response routing</li>
+        <li><span>📊</span> Advanced analytics (coming soon)</li>
+        <li><span>🧪</span> Early access to new subjects & modes</li>
+        <li><span>✉️</span> Email support & faster fixes</li>
+      </ul>
+    </div>
+    <form id='premium-upgrade-form' class='premium-upgrade-form'>
+      <label class='form-label' for='premium-email'>Email for receipt & status</label>
+      <input type='email' id='premium-email' class='modal-input' placeholder='you@example.com' required />
+      <div class='upgrade-actions-row'>
+        <button type='button' class='btn btn-secondary' data-cmd='cancel'>Cancel</button>
+        <button type='submit' class='btn btn-primary' id='premium-submit-btn'>Proceed to Pay</button>
+      </div>
+      <div class='upgrade-disclaimer'>Payment handled by IntaSend sandbox. Do NOT use real card details.</div>
+      <div class='upgrade-error hidden' id='upgrade-error'></div>
+    </form>
+  `);
+  const dialog = document.getElementById('modal-dialog');
+  const form = dialog.querySelector('#premium-upgrade-form');
+  const cancelBtn = dialog.querySelector('[data-cmd="cancel"]');
+  const submitBtn = dialog.querySelector('#premium-submit-btn');
+  const errorBox = dialog.querySelector('#upgrade-error');
+
+  cancelBtn.addEventListener('click', () => closeModal());
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (submitBtn.disabled) return;
+    errorBox.classList.add('hidden');
+    const email = form.querySelector('#premium-email').value.trim();
+    if (!email) { errorBox.textContent = 'Email required'; errorBox.classList.remove('hidden'); return; }
+    submitBtn.disabled = true;
+    const originalText = submitBtn.textContent;
+    submitBtn.innerHTML = `<span class='inline-spinner'></span> Creating checkout...`;
+    try {
+      const resp = await fetch('/payment/upgrade', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const data = await resp.json();
+      if (data.success && data.checkout_url) {
+        localStorage.setItem('pendingUpgradeReference', data.reference);
+        showToast('Redirecting to payment...', 'info');
+        setTimeout(() => { window.location.href = data.checkout_url; }, 500);
+      } else if (data.already_premium) {
+        showToast('You already have Premium.', 'success');
+        closeModal();
+      } else {
+        errorBox.textContent = data.error || 'Failed to initiate payment.';
+        errorBox.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    } catch (err) {
+      errorBox.textContent = 'Network error: ' + err.message;
+      errorBox.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+  });
+}
+
+// Poll for pending payment activation
+async function checkPendingPaymentActivation() {
+  const ref = localStorage.getItem('pendingUpgradeReference');
+  if (!ref) return;
+  try {
+    const resp = await fetch('/payment/status?reference=' + encodeURIComponent(ref));
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (data.payment && data.payment.status === 'completed') {
+      // If backend already upgraded session, plan will show Premium shortly
+      if (data.plan === 'Premium') {
+        showToast('Premium activated! Enjoy unlimited quizzes.', 'success');
+        localStorage.removeItem('pendingUpgradeReference');
+        loadSubscriptionStatus();
+        return;
+      }
+    } else if (data.payment && data.payment.status === 'failed') {
+      showToast('Payment failed. Please try again.', 'error');
+      localStorage.removeItem('pendingUpgradeReference');
+      loadSubscriptionStatus();
+      return;
+    }
+  } catch (e) {
+    // silent
+  }
+}
+
+// Start polling if needed (every 12s)
+setInterval(checkPendingPaymentActivation, 12000);
+
+// ============= Toast & Modal Utilities (End of File) =============
+function showToast(message, type = 'info', opts = {}) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = `toast ${type}`;
+  div.innerHTML = `<div class="toast-msg">${message}</div><button class="toast-close" aria-label="Close">×</button>`;
+  container.appendChild(div);
+  const ttl = opts.ttl || 4000;
+  const close = () => { if (!div.classList.contains('fade-out')) { div.classList.add('fade-out'); setTimeout(() => div.remove(), 230); } };
+  div.querySelector('.toast-close').addEventListener('click', close);
+  setTimeout(close, ttl);
+}
+function openModal(contentHTML) { const overlay = document.getElementById('modal-overlay'); const dialog = document.getElementById('modal-dialog'); if (!overlay || !dialog) return; dialog.innerHTML = contentHTML; overlay.style.display = 'flex'; const closeBtn = dialog.querySelector('.modal-close-btn'); if (closeBtn) closeBtn.addEventListener('click', () => closeModal()); }
+function closeModal() { const overlay = document.getElementById('modal-overlay'); if (overlay) overlay.style.display = 'none'; }
+function showConfirm({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', variant = 'primary' }) { return new Promise(resolve => { openModal(`<button class='modal-close-btn' aria-label='Close'>×</button><h3>${title}</h3><p>${message}</p><div class='modal-actions'><button class='btn btn-secondary' data-cmd='cancel'>${cancelText}</button><button class='btn btn-primary ${variant === 'danger' ? 'btn-danger' : ''}' data-cmd='confirm'>${confirmText}</button></div>`); const dialog = document.getElementById('modal-dialog'); dialog.querySelector('[data-cmd="cancel"]').addEventListener('click', () => { closeModal(); resolve(false); }); dialog.querySelector('[data-cmd="confirm"]').addEventListener('click', () => { closeModal(); resolve(true); }); }); }
+function showPrompt({ title = 'Input', message = 'Enter value', submitText = 'Submit', cancelText = 'Cancel', placeholder = '' }) { return new Promise(resolve => { openModal(`<button class='modal-close-btn' aria-label='Close'>×</button><h3>${title}</h3><p>${message}</p><input type='text' class='modal-input' id='modal-input-field' placeholder='${placeholder}' /><div class='modal-actions'><button class='btn btn-secondary' data-cmd='cancel'>${cancelText}</button><button class='btn btn-primary' data-cmd='submit'>${submitText}</button></div>`); const dialog = document.getElementById('modal-dialog'); const input = dialog.querySelector('#modal-input-field'); setTimeout(() => input && input.focus(), 30); const finish = val => { closeModal(); resolve(val); }; dialog.querySelector('[data-cmd=' + '"cancel"' + ']').addEventListener('click', () => finish(null)); dialog.querySelector('[data-cmd=' + '"submit"' + ']').addEventListener('click', () => finish(input.value.trim() || null)); input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(input.value.trim() || null); }); }); }
