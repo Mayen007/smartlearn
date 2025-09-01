@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLearn JavaScript Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; }
+        #response { display: none; background: #f9f9f9; padding: 20px; margin: 20px 0; }
+        #answer-text { margin: 10px 0; }
+        #quiz-question { margin: 10px 0; }
+        #quiz-options { margin: 10px 0; }
+        #quiz-result { margin: 10px 0; }
+        #learning-tip { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>SmartLearn JavaScript Test</h1>
+    
+    <div class="test-section">
+        <h2>Test AI Tutor Response</h2>
+        <button onclick="testDisplayResponse()">Test Display Response</button>
+        <button onclick="testDisplayResponseWithMissingData()">Test Missing Data</button>
+        <button onclick="testDisplayResponseWithNullData()">Test Null Data</button>
+    </div>
+    
+    <div id="response" class="response-area">
+        <div class="response-content">
+            <h3>Answer:</h3>
+            <div id="answer-text"></div>
+            
+            <!-- Learning Tip -->
+            <div id="learning-tip" class="learning-tip" style="display: none;"></div>
+            
+            <div class="quiz-section">
+                <h4>Practice Question:</h4>
+                <div id="quiz-question"></div>
+                <div id="quiz-options"></div>
+                <button class="btn btn-secondary" onclick="checkAnswer()">Check Answer</button>
+                <div id="quiz-result"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <div id="console-output" style="background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        // Mock console.log to capture output
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addToConsole(message, type = 'log') {
+            const div = document.createElement('div');
+            div.style.color = type === 'error' ? '#ff6b6b' : '#0f0';
+            div.textContent = `[${type.toUpperCase()}] ${message}`;
+            consoleOutput.appendChild(div);
+            consoleOutput.scrollTop = consoleOutput.scrollTop + 1000;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        // Test data
+        const testData = {
+            answer: "This is a test answer from the AI tutor. It explains the concept in detail with multiple paragraphs.\n\nKey Points:\n- Point 1: Important concept\n- Point 2: Another important concept\n\nReal-world Example: This concept applies to everyday situations.\n\nCommon Mistakes: Students often confuse this with other concepts.",
+            quiz_question: "What is the main concept being discussed?",
+            quiz_options: ["Concept A", "Concept B", "Concept C", "Concept D"],
+            quiz_answer: "Concept A",
+            subject: "Mathematics",
+            learning_tip: "Try to relate this concept to real-world examples you encounter daily."
+        };
+        
+        const missingData = {
+            answer: "This answer is missing quiz data"
+        };
+        
+        const nullData = null;
+        
+        // Test functions
+        function testDisplayResponse() {
+            console.log('Testing displayResponse with complete data...');
+            displayResponse(testData);
+        }
+        
+        function testDisplayResponseWithMissingData() {
+            console.log('Testing displayResponse with missing data...');
+            displayResponse(missingData);
+        }
+        
+        function testDisplayResponseWithNullData() {
+            console.log('Testing displayResponse with null data...');
+            displayResponse(nullData);
+        }
+        
+        // Mock functions
+        function checkAnswer() {
+            console.log('Check answer clicked');
+        }
+        
+        // Include the displayResponse function from main.js
+        function displayResponse(data) {
+            console.log('displayResponse called with data:', data);
+            
+            const responseArea = document.getElementById('response');
+            
+            // Check if response area exists
+            if (!responseArea) {
+                console.error('Response area not found');
+                return;
+            }
+
+            // Validate required data fields
+            if (!data || typeof data !== 'object') {
+                console.error('Invalid response data:', data);
+                showError('Received invalid response from AI tutor');
+                return;
+            }
+
+            // Check for required fields
+            if (!data.answer) {
+                console.error('Missing answer field in response:', data);
+                showError('AI tutor response is missing the answer');
+                return;
+            }
+
+            console.log('Data validation passed, proceeding with display...');
+
+            // Store quiz data globally (with fallbacks)
+            currentQuizData = {
+                question: data.quiz_question || 'No practice question available',
+                options: data.quiz_options || ['Option A', 'Option B', 'Option C', 'Option D'],
+                correctAnswer: data.quiz_answer || 'Option A',
+                subject: data.subject || 'General'
+            };
+
+            // Display answer with better formatting
+            const answerText = document.getElementById('answer-text');
+            if (answerText) {
+                answerText.innerHTML = `
+                    <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #4caf50; line-height: 1.8;">
+                        ${formatAIResponse(data.answer)}
+                    </div>
+                `;
+            }
+
+            // Display learning tip if available
+            if (data.learning_tip) {
+                const learningTipDiv = document.getElementById('learning-tip');
+                if (learningTipDiv) {
+                    learningTipDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span>💡</span>
+                            <span><strong>Learning Tip:</strong> ${data.learning_tip}</span>
+                        </div>
+                    `;
+                    learningTipDiv.style.display = 'block';
+                }
+            }
+
+            // Display quiz question
+            const quizQuestion = document.getElementById('quiz-question');
+            if (quizQuestion) {
+                quizQuestion.innerHTML = `
+                    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #667eea;">
+                        <strong>🧠 Practice Question:</strong><br>
+                        ${data.quiz_question || 'No practice question available'}
+                    </div>
+                `;
+            }
+
+            // Display quiz options
+            const quizOptionsContainer = document.getElementById('quiz-options');
+            if (quizOptionsContainer) {
+                quizOptionsContainer.innerHTML = '';
+
+                const options = data.quiz_options || ['Option A', 'Option B', 'Option C', 'Option D'];
+                options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'quiz-option';
+                    optionDiv.innerHTML = `
+                        <span style="font-weight: bold; margin-right: 8px;">${String.fromCharCode(65 + index)})</span>
+                        ${option}
+                    `;
+                    optionDiv.onclick = () => selectAnswer(option, optionDiv);
+                    quizOptionsContainer.appendChild(optionDiv);
+                });
+            }
+
+            // Show response area
+            responseArea.style.display = 'block';
+
+            // Reset quiz result
+            const quizResult = document.getElementById('quiz-result');
+            if (quizResult) {
+                quizResult.innerHTML = '';
+            }
+            selectedAnswer = null;
+
+            // Add success message
+            showSuccessMessage();
+        }
+        
+        function formatAIResponse(response) {
+            // Convert line breaks to HTML
+            let formatted = response.replace(/\n/g, '<br>');
+
+            // Highlight key sections
+            formatted = formatted.replace(/(Key Points?:)/gi, '<strong style="color: #667eea;">$1</strong>');
+            formatted = formatted.replace(/(Real-world Example?:)/gi, '<strong style="color: #4caf50;">$1</strong>');
+            formatted = formatted.replace(/(Common Mistakes?:)/gi, '<strong style="color: #ff9800;">$1</strong>');
+
+            return formatted;
+        }
+        
+        function showSuccessMessage() {
+            const responseArea = document.getElementById('response');
+            if (!responseArea) {
+                console.error('Response area not found for success message');
+                return;
+            }
+            
+            const successDiv = document.createElement('div');
+            successDiv.innerHTML = `
+                <div style="background: #e8f5e8; border: 1px solid #4caf50; border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: center; color: #2e7d32;">
+                    🎉 AI Tutor response generated successfully! 
+                    <div style="font-size: 0.9rem; margin-top: 0.5rem;">
+                        Try the practice question below to test your understanding.
+                    </div>
+                </div>
+            `;
+
+            responseArea.appendChild(successDiv);
+        }
+        
+        function showError(message) {
+            const responseArea = document.getElementById('response');
+            if (responseArea) {
+                responseArea.style.display = 'block';
+                responseArea.innerHTML = `
+                    <div class="response-content">
+                        <div style="text-align: center; padding: 2rem; color: #d32f2f;">
+                            <div style="font-size: 1.2rem; margin-bottom: 1rem;">❌ Error</div>
+                            <div>${message}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        function selectAnswer(answer, element) {
+            console.log('Answer selected:', answer);
+            // Remove previous selection
+            document.querySelectorAll('.quiz-option').forEach(opt => {
+                opt.style.background = 'white';
+                opt.style.border = '2px solid #e1e5e9';
+            });
+            
+            // Highlight selected answer
+            element.style.background = '#e3f2fd';
+            element.style.border = '2px solid #667eea';
+            selectedAnswer = answer;
+        }
+        
+        // Global variables
+        let currentQuizData = null;
+        let selectedAnswer = null;
+        
+        console.log('Test page loaded successfully');
+    </script>
+</body>
+</html>

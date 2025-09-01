@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLearn - AI-Powered Learning Companion</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h1>SmartLearn</h1>
+                <span>AI-Powered Learning</span>
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="nav-toggle" id="nav-toggle">
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+                <span class="hamburger"></span>
+            </div>
+
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#tutor" class="nav-link">AI Tutor</a></li>
+                <li><a href="#quiz-generator" class="nav-link">Quiz Generator</a></li>
+                <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="#subjects" class="nav-link">Subjects</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Your Personal AI Tutor</h1>
+            <p>Get personalized help with Math, Physics, History, and more. Designed for African high school students.
+            </p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" data-action="scroll-to-tutor">Ask the Tutor</button>
+                <button class="btn btn-secondary" data-action="scroll-to-quiz">Generate Quiz</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ask the Tutor Section -->
+    <section id="tutor" class="tutor-section">
+        <div class="container">
+            <h2>Ask the Tutor</h2>
+            <p>Get help with any subject. Ask your question and receive a detailed explanation with practice questions.
+            </p>
+
+            <div class="tutor-form">
+                <div class="form-group">
+                    <label for="subject">Subject:</label>
+                    <select id="subject" name="subject">
+                        <option value="" selected disabled>Select a subject</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Biology">Biology</option>
+                        <option value="History">History</option>
+                        <option value="Geography">Geography</option>
+                        <option value="English">English</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="question">Your Question:</label>
+                    <textarea id="question" name="question"
+                        placeholder="Ask anything! For example: 'Can you explain photosynthesis?'" rows="4"></textarea>
+                </div>
+
+                <button class="btn btn-primary" data-action="ask-tutor">Ask Question</button>
+            </div>
+
+            <!-- Response Display -->
+            <div id="response" class="response-area hidden">
+                <div class="response-content">
+                    <h3>Answer:</h3>
+                    <div id="answer-text"></div>
+
+                    <!-- Learning Tip -->
+                    <div id="learning-tip" class="learning-tip hidden"></div>
+
+                    <div class="quiz-section">
+                        <h4>Practice Question:</h4>
+                        <div id="quiz-question"></div>
+                        <div id="quiz-options"></div>
+                        <button class="btn btn-secondary" data-action="check-answer">Check Answer</button>
+                        <div id="quiz-result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quiz Generator Section -->
+    <section id="quiz-generator" class="quiz-generator-section">
+        <div class="container">
+            <h2>🧠 Quiz Generator</h2>
+            <p>Create personalized AI-generated quizzes on any subject and topic. Test your knowledge with interactive
+                questions!</p>
+
+            <!-- Quiz Creation Form -->
+            <div class="quiz-creation-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="quiz-subject">Subject:</label>
+                        <select id="quiz-subject" name="quiz-subject">
+                            <option value="" selected disabled>Select a subject</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="History">History</option>
+                            <option value="Geography">Geography</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz-topic">Topic:</label>
+                        <select id="quiz-topic" name="quiz-topic">
+                            <option value="">Select a subject first</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz-difficulty">Difficulty:</label>
+                        <select id="quiz-difficulty" name="quiz-difficulty">
+                            <option value="" selected disabled>Select a difficulty</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz-type">Quiz Type:</label>
+                        <select id="quiz-type" name="quiz-type">
+                            <option value="" selected disabled>Select a quiz type</option>
+                            <option value="concept_check">Concept Check</option>
+                            <option value="problem_solving">Problem Solving</option>
+                            <option value="critical_thinking">Critical Thinking</option>
+                            <option value="application">Real-world Application</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="quiz-questions">Number of Questions:</label>
+                        <select id="quiz-questions" name="quiz-questions">
+                            <option value="" selected disabled>Select a number of questions</option>
+                            <option value="3">3 Questions</option>
+                            <option value="5">5 Questions</option>
+                            <option value="7">7 Questions</option>
+                            <option value="10">10 Questions</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateQuiz()">🚀 Generate Quiz</button>
+            </div>
+
+            <!-- Quiz Display Area -->
+            <div id="quiz-display" class="quiz-display" style="display: none;">
+                <div class="quiz-header">
+                    <h3 id="quiz-title"></h3>
+                    <div class="quiz-meta">
+                        <span id="quiz-subject-display"></span> •
+                        <span id="quiz-topic-display"></span> •
+                        <span id="quiz-difficulty-display"></span>
+                    </div>
+                    <div class="quiz-timer" id="quiz-timer" style="display: none;">
+                        Time Remaining: <span id="time-remaining">--:--</span>
+                    </div>
+                </div>
+
+                <div id="quiz-questions-container"></div>
+
+                <div class="quiz-controls">
+                    <button class="btn btn-secondary" id="prev-question" onclick="previousQuestion()"
+                        style="display: none;">← Previous</button>
+                    <button class="btn btn-primary" id="next-question" onclick="nextQuestion()">Next →</button>
+                    <button class="btn btn-primary" id="submit-quiz" onclick="submitQuiz()"
+                        style="display: none;">Submit Quiz</button>
+                </div>
+            </div>
+
+            <!-- Quiz Results -->
+            <div id="quiz-results" class="quiz-results" style="display: none;">
+                <h3>🎯 Quiz Results</h3>
+                <div id="results-summary"></div>
+                <div id="results-breakdown"></div>
+                <div id="results-feedback"></div>
+                <div class="quiz-actions">
+                    <button class="btn btn-primary" onclick="generateNewQuiz()">Generate New Quiz</button>
+                    <button class="btn btn-secondary" onclick="reviewQuiz()">Review Answers</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Learning Dashboard Section -->
+    <section id="dashboard" class="dashboard-section">
+        <div class="container">
+            <h2>Learning Dashboard</h2>
+            <p>Track your progress, view personalized recommendations, and see your learning journey.</p>
+
+            <!-- Dashboard Controls -->
+            <div class="dashboard-controls">
+                <button class="btn btn-primary" onclick="loadDashboard()">Refresh Dashboard</button>
+                <button class="btn btn-secondary" onclick="resetSession()">Reset Session</button>
+            </div>
+
+            <!-- Progress Summary -->
+            <div class="dashboard-grid">
+                <div class="dashboard-card progress-summary">
+                    <h3>📊 Progress Summary</h3>
+                    <div id="progress-summary" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Loading progress...</p>
+                    </div>
+                </div>
+
+                <!-- Learning Recommendations -->
+                <div class="dashboard-card recommendations">
+                    <h3>🎯 Learning Recommendations</h3>
+                    <div id="learning-recommendations" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Analyzing your progress...</p>
+                    </div>
+                </div>
+
+                <!-- Subject Analytics -->
+                <div class="dashboard-card subject-analytics">
+                    <h3>📚 Subject Analytics</h3>
+                    <div id="subject-analytics" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Loading analytics...</p>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="dashboard-card recent-activity">
+                    <h3>🕒 Recent Activity</h3>
+                    <div id="recent-activity" class="loading-placeholder">
+                        <div class="loading-spinner"></div>
+                        <p>Loading activity...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Subjects Section -->
+    <section id="subjects" class="subjects-section">
+        <div class="container">
+            <h2>Available Subjects</h2>
+            <div class="subjects-grid">
+                <div class="subject-card">
+                    <h3>Mathematics</h3>
+                    <p>Algebra, Geometry, Calculus, Statistics</p>
+                </div>
+                <div class="subject-card">
+                    <h3>Physics</h3>
+                    <p>Mechanics, Electricity, Waves, Modern Physics</p>
+                </div>
+                <div class="subject-card">
+                    <h3>Chemistry</h3>
+                    <p>Organic, Inorganic, Physical Chemistry</p>
+                </div>
+                <div class="subject-card">
+                    <h3>Biology</h3>
+                    <p>Cell Biology, Genetics, Ecology, Human Biology</p>
+                </div>
+                <div class="subject-card">
+                    <h3>History</h3>
+                    <p>African History, World History, Modern Era</p>
+                </div>
+                <div class="subject-card">
+                    <h3>Geography</h3>
+                    <p>Physical Geography, Human Geography, Africa</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="container">
+            <h2>About SmartLearn</h2>
+            <p>SmartLearn is an AI-powered learning companion designed specifically for high school students in Africa.
+                Our system provides personalized tutoring, practice questions, and learning recommendations to help you
+                excel in your studies.</p>
+            <div class="features">
+                <div class="feature">
+                    <h3>🎯 Personalized Learning</h3>
+                    <p>AI adapts to your learning style and pace</p>
+                </div>
+                <div class="feature">
+                    <h3>📚 Curriculum Aligned</h3>
+                    <p>Content aligned with KCSE, WAEC, and other African curricula</p>
+                </div>
+                <div class="feature">
+                    <h3>🧠 Smart Practice</h3>
+                    <p>AI-generated practice questions and explanations</p>
+                </div>
+                <div class="feature">
+                    <h3>📊 Progress Tracking</h3>
+                    <p>Monitor your learning journey with detailed analytics</p>
+                </div>
+                <div class="feature">
+                    <h3>🎲 Interactive Quizzes</h3>
+                    <p>AI-generated quizzes with automated grading and feedback</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
